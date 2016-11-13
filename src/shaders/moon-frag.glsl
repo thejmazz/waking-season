@@ -3,7 +3,12 @@
 #pragma glslify: snoise4 = require(glsl-noise/simplex/4d)
 #pragma glslify: snoise2 = require(glsl-noise/simplex/2d)
 
-/* uniform sampler2D noise; */
+uniform float frequency;
+uniform int octaves;
+uniform float amplitude;
+uniform float lacunarity;
+uniform float gain;
+uniform float timeFactor;
 
 // we gonna hijack diffuse
 uniform vec3 diffuse;
@@ -43,53 +48,35 @@ varying vec3 vLightFront;
 
 float fbm (vec3 pos, float time, float frequency, float amplitude, float lacunarity, float gain) {
     float total = 0.0;
+    /* int octaves = 5; */
 
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 100; i++) {
         float noise = snoise4(vec4(pos * frequency, time));
         total += noise;
 
         frequency *= lacunarity;
         amplitude *= gain;
+
+        if (i == octaves - 1 ) {
+            break;
+        }
     }
 
     return total;
 }
 
 void main() {
-    float opacity;
+    /* float frequency = 0.5; */
+    /* float amplitude = 4.0; */
+    /* float lacunarity = 2.0; */
+    /* float gain = 0.5; */
 
-    float frequency = 2.0;
-    float amplitude = 4.0;
-    float lacunarity = 2.0;
-    float gain = 2.0;
+    /* float opacity = fbm(pos, time * 0.01, frequency, amplitude, lacunarity, gain); */
+    float opacity = fbm(pos, time * timeFactor, frequency, amplitude, lacunarity, gain);
+    opacity *= 0.8;
 
-    float f = fbm(pos, time * 0.05, frequency, amplitude, lacunarity, gain);
-
-    opacity = f;
-    /* if (f > 0.5) { */
-    /*     opacity = 0.8; */
-    /* } else { */
-    /*     opacity = 0.0; */
-    /* } */
-
-    gl_FragColor = vec4(diffuse, opacity);
-
-
-    /* vec3 color; */
-
-    /* vec3 green = vec3(0.72, 0.88, 0.23); */
-    /* vec3 blue = vec3(46.0 / 255.0, 190.0 / 255.0, 245.0 / 255.0); */
-
-    /* float noise = snoise3(vec3(pos*16.0 + time * 0.05)); */
-    /* float baseNoise = snoise4(vec4(pos * 0.5, time * 0.25)) * 0.25; */
-
-    /* if (noise > 0.5) { */
-    /*     color = blue; */
-    /* } else { */
-    /*     color = vec3(baseNoise) + green; */
-    /* } */
-
-    /* vec3 diffuse = color; */
+    // see bottom to where gl_FragColor is set, using either diffuse or lighted
+    // color
 
     // === lambert shader code ===
 
@@ -129,6 +116,8 @@ void main() {
     #include <envmap_fragment>
 
     /* gl_FragColor = vec4( outgoingLight, diffuseColor.a ); */
+    gl_FragColor = vec4( diffuse, opacity );
+    /* gl_FragColor = vec4( outgoingLight, opacity ); */
 
     #include <premultiplied_alpha_fragment>
     #include <tonemapping_fragment>
