@@ -183,6 +183,52 @@ const update = (ts, delta) => {
   cloudsMaterial.uniforms.timeFactor.value = p.timeFactor
 }
 
+// === LABEL ===
+
+const label = document.createElement('div')
+label.id = 'label'
+label.innerHTML = '<b>CASPIAN</b> WAKING SEASON'
+label.style.position = 'absolute'
+// label.style.bottom = '100px'
+document.body.appendChild(label)
+
+function toScreenPosition(obj, camera) {
+    camera.updateMatrixWorld()
+    var vector = new THREE.Vector3()
+
+    var widthHalf = 0.5 * renderer.context.canvas.width
+    var heightHalf = 0.5 * renderer.context.canvas.height
+
+    obj.updateMatrixWorld()
+    vector.setFromMatrixPosition(obj.matrixWorld)
+    // console.log(camera)
+    vector.project(camera)
+
+    // console.log(vector)
+
+    vector.x = ( vector.x * widthHalf ) + widthHalf
+    vector.y = - ( vector.y * heightHalf ) + heightHalf
+
+    return {
+        x: vector.x,
+        y: vector.y
+    }
+}
+
+const divObj = new THREE.Object3D()
+divObj.position.set(0, -6, 0)
+
+const updateDivPosition = () => {
+  const label = document.getElementById('label')
+  const coords = toScreenPosition(divObj, camera)
+
+  label.style.left = coords.x - Math.floor(label.offsetWidth / 2) + 'px'
+  label.style.top = coords.y + 'px'
+}
+updateDivPosition()
+
+// console.log(coords)
+
 // === RENDER ===
 
 const clock = new THREE.Clock()
@@ -192,6 +238,7 @@ const render = (ts) => {
 
   renderer.render(scene, camera)
   update(ts, clock.getDelta())
+  updateDivPosition()
   // need GPU for this...
   // cloudsMaterial.alphaMap = noiseTexture(ts)
 
