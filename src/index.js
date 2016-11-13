@@ -63,24 +63,11 @@ const moon = new THREE.Mesh(
 
 // === CLOUDS ===
 
-// const cloudsMaterial = new THREE.ShaderMaterial({
-//   uniforms: Object.assign({}, THREE.ShaderLib.lambert.uniforms, {
-//     // diffuse: [25, 25, 50],
-//     time: { type: 'f', value: 0.0, step: 0.03 },
-//     diffuse: { value: new THREE.Color(0x673D4D) },
-//     opacity: { value: 0.8 }
-//   }),
-//   vertexShader: glslify('./shaders/cmo-vert.glsl'),
-//   fragmentShader: glslify('./shaders/moon-frag.glsl'),
-//   lights: true,
-//   // opacity: 0.5,
-//   transparent: true,
-// })
 
 const noiseTexture = (time) => {
   const noise = new Noise(Math.random())
 
-  const noiseSize = 1024
+  const noiseSize = 256
   const size = noiseSize * noiseSize
   const data = new Uint8Array( 4 * size )
 
@@ -89,8 +76,9 @@ const noiseTexture = (time) => {
     for (let y = 0; y < noiseSize; y++) {
       for (let i = 0; i < 4; i++) {
         // data[j] = Math.abs(noise.simplex2(x / 100, y / 100)) * 255 | 0
-        data[j] = Math.abs(noise.perlin3(x / 50, y / 50, time)) * 255 | 0
+        // data[j] = Math.abs(noise.perlin3(x / 50, y / 50, time)) * 255 | 0
         // data[j] = noise.simplex2(x / 100, y / 100) * 255 | 0
+        data[j] = Math.random() * 255 | 0
         j++
       }
     }
@@ -101,15 +89,31 @@ const noiseTexture = (time) => {
   dt.wrapT = THREE.RepeatWrapping
   dt.needsUpdate = true
 
+  dt.minFilter = THREE.LinearMipMapLinearFilter
+  dt.magFilter = THREE.LinearMipMapLinearFilter
+
   return dt
 }
 
-const cloudsMaterial = new THREE.MeshBasicMaterial({
-  color: 0x673D4D,
-  // alphaMap: textureLoader.load('textures/moon-diffuse.jpg'),
-  alphaMap: noiseTexture(0),
+// const cloudsMaterial = new THREE.MeshBasicMaterial({
+//   color: 0x673D4D,
+//   // alphaMap: textureLoader.load('textures/moon-diffuse.jpg'),
+//   alphaMap: noiseTexture(0),
+//   transparent: true,
+//   side: THREE.FrontSide
+// })
+
+const cloudsMaterial = new THREE.ShaderMaterial({
+  uniforms: Object.assign({}, THREE.ShaderLib.lambert.uniforms, {
+    time: { type: 'f', value: 0.0, step: 0.03 },
+    diffuse: { value: new THREE.Color(0x673D4D) },
+    noise: { type: 't', value: noiseTexture() }
+    // opacity: { value: 0.8 }
+  }),
+  vertexShader: glslify('./shaders/cmo-vert.glsl'),
+  fragmentShader: glslify('./shaders/moon-frag.glsl'),
+  lights: true,
   transparent: true,
-  side: THREE.FrontSide
 })
 
 const blackMaterial = new THREE.MeshLambertMaterial({
@@ -131,6 +135,8 @@ scene.add(clouds)
 
 const update = (ts, delta) => {
   moon.rotation.y += delta * 0.05 * Math.PI
+  clouds.rotation.y += delta * 0.025 * Math.PI
+  cloudsMaterial.uniforms.time.value += cloudsMaterial.uniforms.time.step
 }
 
 // === RENDER ===

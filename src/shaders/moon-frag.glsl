@@ -3,10 +3,12 @@
 #pragma glslify: snoise4 = require(glsl-noise/simplex/4d)
 #pragma glslify: snoise2 = require(glsl-noise/simplex/2d)
 
+/* uniform sampler2D noise; */
+
 // we gonna hijack diffuse
 uniform vec3 diffuse;
 uniform vec3 emissive;
-uniform float opacity;
+/* uniform float opacity; */
 
 // add time for noise
 uniform float time;
@@ -39,8 +41,39 @@ varying vec3 vLightFront;
 #include <logdepthbuf_pars_fragment>
 #include <clipping_planes_pars_fragment>
 
+float fbm (vec3 pos, float time, float frequency, float amplitude, float lacunarity, float gain) {
+    float total = 0.0;
+
+    for (int i = 0; i < 5; i++) {
+        float noise = snoise4(vec4(pos * frequency, time));
+        total += noise;
+
+        frequency *= lacunarity;
+        amplitude *= gain;
+    }
+
+    return total;
+}
+
 void main() {
-    /* float opacity: 0.8; */
+    float opacity;
+
+    float frequency = 2.0;
+    float amplitude = 4.0;
+    float lacunarity = 2.0;
+    float gain = 2.0;
+
+    float f = fbm(pos, time * 0.05, frequency, amplitude, lacunarity, gain);
+
+    opacity = f;
+    /* if (f > 0.5) { */
+    /*     opacity = 0.8; */
+    /* } else { */
+    /*     opacity = 0.0; */
+    /* } */
+
+    gl_FragColor = vec4(diffuse, opacity);
+
 
     /* vec3 color; */
 
@@ -95,7 +128,7 @@ void main() {
     #include <normal_flip>
     #include <envmap_fragment>
 
-    gl_FragColor = vec4( outgoingLight, diffuseColor.a );
+    /* gl_FragColor = vec4( outgoingLight, diffuseColor.a ); */
 
     #include <premultiplied_alpha_fragment>
     #include <tonemapping_fragment>
